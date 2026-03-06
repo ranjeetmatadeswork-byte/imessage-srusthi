@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>where it started 💬</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            background: #000;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* ── Intro screen ── */
+        #intro {
+            position: fixed; inset: 0; z-index: 200;
+            background: #000;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 1rem; text-align: center; padding: 2rem;
+            transition: opacity 1s ease;
+        }
+        #intro.hide { opacity: 0; pointer-events: none; }
+        .intro-tag {
+            font-size: 0.72rem; letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+        .intro-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(2.5rem, 10vw, 4rem);
+            color: #fff; line-height: 1.1;
+        }
+        .intro-sub {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic; font-size: 1rem; font-weight: 300;
+            color: rgba(255,255,255,0.4); max-width: 280px; line-height: 1.6;
+        }
+        .intro-btn {
+            margin-top: 1rem;
+            padding: 12px 32px; border-radius: 50px;
+            background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+            border: none; color: #fff;
+            font-size: 1rem; font-weight: 600;
+            cursor: pointer; letter-spacing: 0.04em;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .intro-btn:hover { transform: scale(1.05); opacity: 0.9; }
+
+        /* ── Phone frame ── */
+        #phone {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            background: #000;
+            max-width: 430px;
+            margin: 0 auto;
+        }
+
+        /* ── Instagram DM header ── */
+        .ig-header {
+            background: #000;
+            border-bottom: 0.5px solid rgba(255,255,255,0.1);
+            padding: 0.7rem 1rem;
+            display: flex; align-items: center; gap: 10px;
+            flex-shrink: 0;
+            padding-top: env(safe-area-inset-top, 0.7rem);
+        }
+        .ig-back {
+            font-size: 1.4rem; color: #fff;
+            cursor: pointer; padding: 4px 8px 4px 0;
+        }
+        .ig-avatar-wrap { position: relative; }
+        .ig-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+            padding: 2px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .ig-avatar-inner {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: #222;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+        }
+        .ig-avatar-inner img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .ig-online-dot {
+            position: absolute; bottom: 1px; right: 1px;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #4ade80; border: 2px solid #000;
+        }
+        .ig-info { flex: 1; }
+        .ig-name {
+            font-size: 0.95rem; font-weight: 600; color: #fff;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .ig-heart { font-size: 0.85rem; }
+        .ig-username { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-top: 1px; }
+        .ig-actions { display: flex; gap: 14px; font-size: 1.3rem; opacity: 0.8; }
+
+        /* ── Chat area ── */
+        .chat-area {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            padding: 1rem 0.8rem 0.5rem;
+            display: flex; flex-direction: column; gap: 3px;
+            scroll-behavior: smooth;
+            background: #000;
+        }
+        .chat-area::-webkit-scrollbar { display: none; }
+
+        /* ── Date divider ── */
+        .date-divider {
+            text-align: center;
+            font-size: 0.7rem; color: rgba(255,255,255,0.35);
+            margin: 8px 0 4px;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── Note reply banner ── */
+        .note-banner {
+            text-align: center;
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.3);
+            margin: 4px 0 8px;
+            font-style: italic;
+        }
+
+        /* ── Message row ── */
+        .msg-row {
+            display: flex; align-items: flex-end; gap: 6px;
+            opacity: 0; transform: translateY(12px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .msg-row.visible { opacity: 1; transform: translateY(0); }
+        .msg-row.sent  { justify-content: flex-end; }
+        .msg-row.recv  { justify-content: flex-start; }
+
+        /* Avatar in received */
+        .msg-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+            padding: 1.5px; flex-shrink: 0; align-self: flex-end;
+            margin-bottom: 2px;
+        }
+        .msg-avatar-inner {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: #222; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem;
+        }
+        .msg-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
+        .msg-avatar.hidden { visibility: hidden; }
+
+        /* Bubble */
+        .bubble {
+            max-width: 72%;
+            padding: 9px 13px;
+            border-radius: 22px;
+            font-size: 0.92rem; line-height: 1.45;
+            position: relative;
+            word-break: break-word;
+        }
+        .sent .bubble {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: #fff;
+            border-bottom-right-radius: 6px;
+        }
+        .recv .bubble {
+            background: #262626;
+            color: #fff;
+            border-bottom-left-radius: 6px;
+        }
+
+        /* Emoji only bubble */
+        .bubble.emoji-only {
+            background: transparent !important;
+            font-size: 1.8rem;
+            padding: 2px 4px;
+        }
+
+        /* Reply bubble */
+        .reply-wrap {
+            display: flex; flex-direction: column; gap: 2px;
+            max-width: 72%;
+        }
+        .reply-preview {
+            background: rgba(255,255,255,0.08);
+            border-left: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px; padding: 5px 10px;
+            font-size: 0.75rem; color: rgba(255,255,255,0.45);
+            margin-left: auto;
+        }
+        .recv .reply-preview {
+            margin-left: 0; margin-right: auto;
+            border-left: 2px solid rgba(255,255,255,0.2);
+        }
+
+        /* Reaction */
+        .reaction {
+            position: absolute;
+            bottom: -10px; right: 6px;
+            background: #1a1a1a; border: 1px solid #333;
+            border-radius: 10px; padding: 1px 5px;
+            font-size: 0.75rem;
+        }
+        .recv .reaction { right: auto; left: 6px; }
+
+        /* ── Seen indicator ── */
+        .seen-row {
+            text-align: right;
+            font-size: 0.65rem; color: rgba(255,255,255,0.25);
+            margin-top: 2px; padding-right: 4px;
+            opacity: 0; transition: opacity 0.5s ease;
+        }
+        .seen-row.visible { opacity: 1; }
+
+        /* ── Typing indicator ── */
+        .typing-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 0;
+            opacity: 0; transition: opacity 0.4s ease;
+        }
+        .typing-row.visible { opacity: 1; }
+        .typing-bubble {
+            background: #262626; border-radius: 18px;
+            padding: 10px 14px;
+            display: flex; gap: 4px; align-items: center;
+        }
+        .typing-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            animation: typingBounce 1.2s ease-in-out infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%,100% { transform: translateY(0); opacity: 0.5; }
+            50%      { transform: translateY(-4px); opacity: 1; }
+        }
+
+        /* ── Final note ── */
+        .final-note {
+            background: linear-gradient(135deg, rgba(131,58,180,0.15), rgba(253,29,29,0.1));
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px; margin: 1rem 0.5rem;
+            padding: 1rem 1.2rem;
+            text-align: center;
+            opacity: 0; transition: opacity 0.8s ease;
+        }
+        .final-note.visible { opacity: 1; }
+        .final-note-tag {
+            font-size: 0.65rem; letter-spacing: 0.16em;
+            text-transform: uppercase; color: rgba(255,255,255,0.3);
+            margin-bottom: 0.5rem;
+        }
+        .final-note-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic; font-size: 1rem; font-weight: 300;
+            color: rgba(255,255,255,0.7); line-height: 1.6;
+        }
+        .final-note-sig {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.8rem; color: #ec4899;
+            margin-top: 0.5rem;
+        }
+
+        /* ── Input bar ── */
+        .ig-input {
+            flex-shrink: 0;
+            background: #000;
+            border-top: 0.5px solid rgba(255,255,255,0.08);
+            padding: 0.6rem 0.8rem;
+            display: flex; align-items: center; gap: 10px;
+            padding-bottom: env(safe-area-inset-bottom, 0.6rem);
+        }
+        .ig-input-camera { font-size: 1.4rem; opacity: 0.6; }
+        .ig-input-box {
+            flex: 1; background: #1a1a1a;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 22px; padding: 8px 14px;
+            font-size: 0.9rem; color: rgba(255,255,255,0.35);
+            pointer-events: none;
+        }
+        .ig-input-icons { display: flex; gap: 10px; font-size: 1.3rem; opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+<!-- Audio -->
+<audio id="bgMusic" loop>
+    <source src="assets/i-wanna-be-yours.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Intro -->
+<div id="intro">
+    <p class="intro-tag">✦ 12 august 2024 ✦</p>
+    <h1 class="intro-title">where it all started</h1>
+    <p class="intro-sub">one note about The Weeknd — and nothing was ever the same again 🎵</p>
+    <button class="intro-btn" onclick="startChat()">read the story 💬</button>
+</div>
+
+<!-- Phone -->
+<div id="phone" style="opacity:0;transition:opacity 0.8s ease;">
+
+    <!-- Header -->
+    <div class="ig-header">
+        <span class="ig-back">←</span>
+        <div class="ig-avatar-wrap">
+            <div class="ig-avatar">
+                <div class="ig-avatar-inner">
+                    <img src="assets/srushti-dp.jpg" alt="S"
+                         onerror="this.style.display='none';this.parentElement.textContent='🌸'">
+                </div>
+            </div>
+            <div class="ig-online-dot"></div>
+        </div>
+        <div class="ig-info">
+            <div class="ig-name">Louuuu <span class="ig-heart">💗</span></div>
+            <div class="ig-username">srupernova · Active now</div>
+        </div>
+        <div class="ig-actions">
+            <span>📞</span>
+            <span>🎥</span>
+        </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-area" id="chatArea">
+        <div class="date-divider">August 12, 2024</div>
+        <div class="note-banner">You replied to their note · Note unavailable</div>
+    </div>
+
+    <!-- Input -->
+    <div class="ig-input">
+        <span class="ig-input-camera">📷</span>
+        <div class="ig-input-box">Message...</div>
+        <div class="ig-input-icons">
+            <span>🎤</span><span>🖼</span><span>😊</span><span>➕</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ── Message data ──────────────────────────────────────────
+    const MESSAGES = [
+        { type:'sent',  text:'You listen to the weeknd ?!!!', delay:0 },
+        { type:'recv',  text:'Yep!', delay:900 },
+        { type:'sent',  text:'Ohhh', delay:700 },
+        { type:'sent',  text:"Here's a fan too 🐱", delay:500, reaction:'💕' },
+        { type:'recv',  text:'You listen to him too?!?', delay:1000 },
+        { type:'sent',  text:'Yeppp', delay:600 },
+        { type:'sent',  text:'Almost every album 🥲🥲', delay:400 },
+        { type:'recv',  text:'His albums are dope!!', delay:900 },
+        { type:'sent',  text:'Yesss 🤝', delay:600 },
+        { type:'recv',  text:'Tu kontya branch madhe aahes ?! 😆', delay:1100 },
+        { type:'recv',  text:'Civil and environmental', delay:300 },
+        { type:'recv',  text:'Tu?', delay:400 },
+        { type:'sent',  text:'Zhade lava zhade jagva 😭👍', delay:900, reaction:'😂' },
+        { type:'sent',  text:'A.I', delay:600 },
+        { type:'recv',  text:'Tyat jast civil ahe 😭', delay:1000 },
+        { type:'sent',  text:'Hoiieee ?!!', delay:700 },
+        { type:'sent',  text:'Mala vatla tumcha syllabus vegla aasel', delay:500 },
+        { type:'recv',  text:'EVS add ahe fkt 🥲', delay:1100 },
+        { type:'sent',  text:'LOL 😭😭', delay:600 },
+        { type:'recv',  text:'I know 😭 regretting my life decisions', delay:800 },
+        { type:'sent',  text:'😭😭😭', emoji:true, delay:500 },
+        { type:'sent',  text:'All clear aahes ?!', delay:400 },
+        { type:'recv',  text:'Nhi 😭😭', delay:900 },
+        { type:'recv',  text:'M2 gela', delay:300 },
+        { type:'sent',  text:'😭👍👍', emoji:true, delay:600 },
+        { type:'sent',  text:'Majha pn M2 gelea FY la', delay:400 },
+        { type:'recv',  text:'Mala maths avdtch nhi 😭', delay:1100 },
+        { type:'sent',  text:'😂😂😂', emoji:true, delay:500 },
+        { type:'sent',  text:'Tumhala m3 pn asel 💀💀', delay:400 },
+        { type:'recv',  text:'Nopeee', delay:800 },
+        { type:'recv',  text:'Vectors ahe hya sem la', delay:300 },
+        { type:'sent',  text:'Hoyyy', delay:700 },
+        { type:'sent',  text:'Sutlis ki mg', delay:400 },
+        { type:'recv',  text:'Te pahila yayla pahije 💀', delay:900 },
+        { type:'sent',  text:'💃💃💃💃💃', emoji:true, delay:600 },
+        { type:'recv',  text:'First lsn tri ahe sopa bakiche saral astil tr ky mg tension nhi 😂', delay:1200 },
+        { type:'sent',  text:'😭😭', emoji:true, delay:500 },
+        { type:'sent',  text:'Asel Asel', delay:400 },
+        { type:'sent',  text:'Hopes 😭', delay:300, reaction:'❤️' },
+        { type:'recv',  text:'Tumhala kiti sem la maths ahe?', delay:1000 },
+        { type:'sent',  text:'So M1 and M2 FY la hota', delay:700 },
+        { type:'recv',  text:'Changla ahe tumch 🥲', delay:800 },
+        { type:'sent',  text:'S.Y it was all about amche core maths subject te kay yevdhe hard nvhte', delay:600 },
+        { type:'sent',  text:'T.Y la ataa sagale core subjects no maths', delay:400 },
+        { type:'recv',  text:'Tumhi sutla mhnje 😂', delay:900 },
+        { type:'recv',  text:'Mg tu ata kontya year la ahes? TY?', delay:700 },
+        { type:'recv',  text:'Amche sirch changle nhvte 🥲', delay:300 },
+        { type:'sent',  text:'Yesss', delay:800 },
+        { type:'sent',  text:'Dhanani che notes kr fakt makeup la baki kay garaj nahiii', delay:500 },
+        { type:'recv',  text:'Amhala te sir nhvte na pn...', delay:900 },
+        { type:'recv',  text:'Konakade ahet ky bgayla pahije mala ata', delay:400 },
+        { type:'sent',  text:'Bg bg konakade bhetat ka', delay:800 },
+        { type:'sent',  text:'Notes jari kelas tari aaramat pass', delay:400 },
+        { type:'final', delay: 1200 },
+    ];
+
+    let msgIndex = 0;
+    let chatArea;
+
+    function startChat() {
+        document.getElementById('intro').classList.add('hide');
+        const phone = document.getElementById('phone');
+        setTimeout(() => { phone.style.opacity = '1'; }, 300);
+        chatArea = document.getElementById('chatArea');
+
+        // Start music
+        const audio = document.getElementById('bgMusic');
+        if (audio) {
+            audio.volume = 0;
+            audio.play().catch(() => {});
+            let vol = 0;
+            const fade = setInterval(() => {
+                vol = Math.min(vol + 0.02, 0.3);
+                audio.volume = vol;
+                if (vol >= 0.3) clearInterval(fade);
+            }, 120);
+        }
+
+        setTimeout(() => runNext(), 800);
+    }
+
+    function runNext() {
+        if (msgIndex >= MESSAGES.length) return;
+        const msg = MESSAGES[msgIndex];
+        msgIndex++;
+
+        if (msg.type === 'final') {
+            showTyping(() => {
+                showFinalNote();
+            });
+            return;
+        }
+
+        // Show typing indicator for received messages
+        if (msg.type === 'recv') {
+            showTyping(() => {
+                appendMessage(msg);
+                setTimeout(() => runNext(), msg.delay || 600);
+            });
+        } else {
+            appendMessage(msg);
+            setTimeout(() => runNext(), msg.delay || 600);
+        }
+    }
+
+    let typingEl = null;
+    function showTyping(callback) {
+        typingEl = document.createElement('div');
+        typingEl.className = 'msg-row recv typing-row';
+
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'msg-avatar';
+        avatarDiv.innerHTML = `<div class="msg-avatar-inner">
+            <img src="assets/srushti-dp.jpg" onerror="this.style.display='none';this.parentElement.textContent='🌸'">
+        </div>`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'typing-bubble';
+        bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+
+        typingEl.appendChild(avatarDiv);
+        typingEl.appendChild(bubble);
+        chatArea.appendChild(typingEl);
+        scrollBottom();
+
+        requestAnimationFrame(() => typingEl.classList.add('visible'));
+
+        setTimeout(() => {
+            if (typingEl) { typingEl.remove(); typingEl = null; }
+            callback();
+        }, 900);
+    }
+
+    // Track previous message type for avatar visibility
+    let prevType = null;
+
+    function appendMessage(msg) {
+        const row = document.createElement('div');
+        row.className = `msg-row ${msg.type}`;
+
+        if (msg.type === 'recv') {
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'msg-avatar';
+            avatarDiv.innerHTML = `<div class="msg-avatar-inner">
+                <img src="assets/srushti-dp.jpg" onerror="this.style.display='none';this.parentElement.textContent='🌸'">
+            </div>`;
+            row.appendChild(avatarDiv);
+        }
+
+        const bubble = document.createElement('div');
+        bubble.className = `bubble${msg.emoji ? ' emoji-only' : ''}`;
+        bubble.textContent = msg.text;
+
+        if (msg.reaction) {
+            const react = document.createElement('div');
+            react.className = 'reaction';
+            react.textContent = msg.reaction;
+            bubble.appendChild(react);
+        }
+
+        row.appendChild(bubble);
+        chatArea.appendChild(row);
+
+        requestAnimationFrame(() => {
+            row.classList.add('visible');
+            scrollBottom();
+        });
+
+        prevType = msg.type;
+    }
+
+    function showFinalNote() {
+        // Add seen indicator
+        const seen = document.createElement('div');
+        seen.className = 'seen-row';
+        seen.textContent = 'Seen · 12 Aug 2024';
+        chatArea.appendChild(seen);
+        requestAnimationFrame(() => seen.classList.add('visible'));
+
+        // Date divider
+        const divider = document.createElement('div');
+        divider.className = 'date-divider';
+        divider.style.marginTop = '1.5rem';
+        divider.textContent = 'today';
+        chatArea.appendChild(divider);
+
+        // Final note
+        const note = document.createElement('div');
+        note.className = 'final-note';
+        note.innerHTML = `
+            <div class="final-note-tag">✦ the moment I knew ✦</div>
+            <p class="final-note-text">
+                I didn't know it then — but this was the conversation
+                that changed everything. One note about The Weeknd.
+                That's all it took. And somewhere between the syllabus jokes
+                and the 😭 emojis, I knew I wanted to keep talking to you
+                forever.
+            </p>
+            <div class="final-note-sig">yours, Ranjeet</div>
+        `;
+        chatArea.appendChild(note);
+        scrollBottom();
+
+        setTimeout(() => {
+            note.classList.add('visible');
+            scrollBottom();
+        }, 300);
+    }
+
+    function scrollBottom() {
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+</script>
+</body>
+</html>
